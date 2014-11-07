@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension
+         point="org.eclipse.debug.core.launchConfigurationTypes">
+      <launchConfigurationType
+            delegate="org.epitest.runner.LaunchConfigurationDelegate"
+            id="org.epitest.runner.launchConfigurationType"
+            modes="run"
+            name="PiTest Muatation Test">
+      </launchConfigurationType>
+   </extension>
+   <extension
+         point="org.eclipse.debug.ui.launchConfigurationTabGroups">
+      <launchConfigurationTabGroup
+            class="org.epitest.runner.LaunchConfigurationTabGroup"
+            id="org.epitest.runner.launchConfigurationTabGroup"
+            type="org.epitest.runner.launchConfigurationType">
+      </launchConfigurationTabGroup>
+   </extension>
+
+</plugin>
