@@ -14,7 +14,6 @@ import static org.eclipse.jdt.ui.JavaElementLabels.ALL_FULLY_QUALIFIED;
 import static org.eclipse.jdt.ui.JavaElementLabels.getTextLabel;
 import static org.eclipse.jdt.ui.JavaUI.getEditorInputTypeRoot;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -114,7 +113,7 @@ public class LaunchShortcut implements ILaunchShortcut2 {
 						elementToLaunch = ((IClassFile) element).getType();
 						break;
 					case COMPILATION_UNIT:
-						elementToLaunch = findTypeToLaunch((ICompilationUnit) element, mode);
+						elementToLaunch = ((ICompilationUnit) element).findPrimaryType();
 						break;
 					}
 				}
@@ -124,7 +123,7 @@ public class LaunchShortcut implements ILaunchShortcut2 {
 				return;
 			}
 			performLaunch(elementToLaunch, mode);
-		} catch (InterruptedException | CoreException | InvocationTargetException e) {
+		} catch (InterruptedException | CoreException e) {
 			e.printStackTrace();
 		}
 	}
@@ -133,21 +132,12 @@ public class LaunchShortcut implements ILaunchShortcut2 {
 		MessageDialog.openInformation(getShell(), "Pitclipse", "No tests found");
 	}
 
-	private IType findTypeToLaunch(ICompilationUnit cu, String mode) throws InterruptedException, InvocationTargetException {
-		IType type = findTypeToLaunch(cu);
-		return type;
-	}
-
-	private IType findTypeToLaunch(ICompilationUnit cu) throws InterruptedException, InvocationTargetException {
-		return cu.findPrimaryType();
-	}
-
 	private void performLaunch(IJavaElement element, String mode) throws InterruptedException, CoreException {
-		ILaunchConfigurationWorkingCopy temparary = createLaunchConfiguration(element);
-		ILaunchConfiguration config = findExistingLaunchConfiguration(temparary, mode);
+		ILaunchConfigurationWorkingCopy temporary = createLaunchConfiguration(element);
+		ILaunchConfiguration config = findExistingLaunchConfiguration(temporary, mode);
 		if (config == null) {
 			// no existing found: create a new one
-			config = temparary.doSave();
+			config = temporary.doSave();
 		}
 		DebugUITools.launch(config, mode);
 	}

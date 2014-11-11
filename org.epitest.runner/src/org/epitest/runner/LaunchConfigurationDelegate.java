@@ -1,5 +1,6 @@
 package org.epitest.runner;
 
+import static com.google.common.collect.Lists.newArrayList;
 import static java.util.Arrays.asList;
 
 import java.io.File;
@@ -16,6 +17,8 @@ import org.eclipse.jdt.launching.ExecutionArguments;
 import org.eclipse.jdt.launching.IVMRunner;
 import org.eclipse.jdt.launching.VMRunnerConfiguration;
 
+import com.google.common.collect.Lists;
+
 /**
  * Launch configuration delegate for a JUnit test as a Java application.
  * 
@@ -29,6 +32,8 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 
 	private static final String MAIN_TYPE = "org.pitest.mutationtest.commandline.MutationCoverageReport";
 
+	private String pitestCommandLineJar = Activator.getDefault().getPitestCmdLinePath();
+	private String pitestJar = Activator.getDefault().getPitestCorePath();
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -59,7 +64,9 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 
 		// VM-specific attributes
 		Map<String, Object> vmAttributesMap = getVMSpecificAttributesMap(configuration);
-
+		
+		
+		
 		// Classpath
 		String[] classpath = getClasspath(configuration);
 
@@ -78,13 +85,17 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 		runConfig.setEnvironment(envp);
 		runConfig.setWorkingDirectory(workingDirName);
 		runConfig.setVMSpecificAttributesMap(vmAttributesMap);
+		
 
 		// Bootpath
-		runConfig.setBootClassPath(getBootpath(configuration));
+		String[] bootpath = getBootpath(configuration);
+		runConfig.setBootClassPath(bootpath);
 
 		// set the default source locator if required
 		setDefaultSourceLocator(launch, configuration);
 
+		
+		
 		// Launch the configuration - 1 unit of work
 		runner.run(runConfig, launch, monitor);
 
@@ -111,6 +122,8 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 	 */
 	protected void collectExecutionArguments(ILaunchConfiguration configuration, List<String> vmArguments, List<String> programArguments) throws CoreException {
 
+		
+		
 		// add program & VM arguments provided by getProgramArguments and
 		// getVMArguments
 		String pgmArgs = getProgramArguments(configuration);
@@ -121,6 +134,14 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 
 		programArguments.add("-version"); //$NON-NLS-1$
 		programArguments.add("3"); //$NON-NLS-1$
+	}
+	
+	public String[] getClasspath(ILaunchConfiguration configuration) throws CoreException{
+		List<String> classpath = newArrayList( super.getClasspath(configuration));
+		classpath.add( pitestCommandLineJar);
+		classpath.add( pitestJar);
+		
+		return classpath.toArray(new String[0]);
 	}
 
 }
