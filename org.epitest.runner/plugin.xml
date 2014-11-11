@@ -18,5 +18,31 @@
             type="org.epitest.runner.launchConfigurationType">
       </launchConfigurationTabGroup>
    </extension>
+   <extension
+         point="org.eclipse.debug.ui.launchShortcuts">
+      <shortcut
+            class="org.epitest.runner.LaunchShortcut"
+            id="org.epitest.runner.shortcut"
+            label="Epitest"
+            modes="run">
+        <contextualLaunch>
+            <enablement>
+               <with variable="selection">
+                  <count value="1"/>
+               	  <iterate>
+                     <adapt type="org.eclipse.jdt.core.IJavaElement">
+		                <test property="org.eclipse.jdt.core.isInJavaProject"/>
+		              	<!--
+		                <test property="org.eclipse.jdt.core.hasTypeOnClasspath" value="junit.framework.Test"/>
+		                <test property="org.eclipse.jdt.junit.canLaunchAsJUnit" forcePluginActivation="true"/>
+		             	-->
+		             </adapt>
+		          </iterate>
+               </with>
+            </enablement>
+         </contextualLaunch>    
+            
+      </shortcut>
+   </extension>
 
 </plugin>

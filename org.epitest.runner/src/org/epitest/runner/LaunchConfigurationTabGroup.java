@@ -2,6 +2,7 @@ package org.epitest.runner;
 
 import org.eclipse.debug.ui.AbstractLaunchConfigurationTabGroup;
 import org.eclipse.debug.ui.CommonTab;
+import org.eclipse.debug.ui.EnvironmentTab;
 import org.eclipse.debug.ui.ILaunchConfigurationDialog;
 import org.eclipse.debug.ui.ILaunchConfigurationTab;
 import org.eclipse.jdt.debug.ui.launchConfigurations.JavaArgumentsTab;
@@ -16,8 +17,9 @@ public class LaunchConfigurationTabGroup extends AbstractLaunchConfigurationTabG
 		final ILaunchConfigurationTab[] tabs = new ILaunchConfigurationTab[] {
 				new EpitestArgumentsTab(),
 				new JavaArgumentsTab(),
+				new JavaClasspathTab(),
 				new JavaJRETab(),
-				new JavaClasspathTab(), 
+				new EnvironmentTab(),
 				new CommonTab()
 		};
 		setTabs(tabs);
