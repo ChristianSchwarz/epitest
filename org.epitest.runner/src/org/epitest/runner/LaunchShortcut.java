@@ -68,6 +68,7 @@ public class LaunchShortcut implements ILaunchShortcut2 {
 	 */
 	public void launch(IEditorPart editor, String mode) {
 		ITypeRoot element = getEditorInputTypeRoot(editor.getEditorInput());
+		
 		if (element == null) {
 			showNoTestsFoundDialog();
 		} else {

@@ -41,6 +41,9 @@ public class Activator extends AbstractUIPlugin {
 		pitestCmdLinePath = resolve( bundle,PITEST_CMD_LINE_JAR);
 		pitestCorePath = resolve( bundle,PITEST_JAR);
 		
+		System.out.println(pitestCmdLinePath);
+		System.out.println(pitestCorePath);
+		
 	}
 
 	
