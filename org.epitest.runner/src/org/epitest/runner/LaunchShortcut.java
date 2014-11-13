@@ -10,8 +10,6 @@ import static org.eclipse.jdt.core.IJavaElement.PACKAGE_FRAGMENT_ROOT;
 import static org.eclipse.jdt.core.IJavaElement.TYPE;
 import static org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants.ATTR_MAIN_TYPE_NAME;
 import static org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants.ATTR_PROJECT_NAME;
-import static org.eclipse.jdt.ui.JavaElementLabels.ALL_FULLY_QUALIFIED;
-import static org.eclipse.jdt.ui.JavaElementLabels.getTextLabel;
 import static org.eclipse.jdt.ui.JavaUI.getEditorInputTypeRoot;
 
 import java.util.ArrayList;
@@ -39,6 +37,8 @@ import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.ITypeRoot;
 import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants;
+import org.eclipse.jdt.ui.JavaElementLabels;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -193,64 +193,63 @@ public class LaunchShortcut implements ILaunchShortcut2 {
 	}
 
 	/**
-	 * Creates a launch configuration working copy for the given element. The
-	 * launch configuration type created will be of the type returned by
-	 * {@link #getLaunchConfigurationTypeId}. The element type can only be of
-	 * type {@link IJavaProject}, {@link IPackageFragmentRoot},
-	 * {@link IPackageFragment}, {@link IType} or {@link IMethod}.
-	 * 
-	 * Clients can extend this method (should call super) to configure
-	 * additional attributes on the launch configuration working copy.
-	 * 
-	 * @param element
-	 *            element to launch
-	 * 
+	 * Creates a launch configuration working copy for the given element. The launch configuration type created will be of the type returned by {@link #getLaunchConfigurationTypeId}.
+	 * The element type can only be of type {@link IJavaProject}, {@link IPackageFragmentRoot}, {@link IPackageFragment}, {@link IType} or {@link IMethod}.
+	 *
+	 * Clients can extend this method (should call super) to configure additional attributes on the launch configuration working copy.
+	 * @param element element to launch
+	 *
 	 * @return a launch configuration working copy for the given element
-	 * @throws CoreException
-	 *             if creation failed
+	 * @throws CoreException if creation failed
 	 */
 	protected ILaunchConfigurationWorkingCopy createLaunchConfiguration(IJavaElement element) throws CoreException {
 		final String testName;
 		final String mainTypeQualifiedName;
+		final String containerHandleId;
 
 		switch (element.getElementType()) {
-		case JAVA_PROJECT:
-		case PACKAGE_FRAGMENT_ROOT:
-		case PACKAGE_FRAGMENT: {
-			String name = getTextLabel(element, ALL_FULLY_QUALIFIED);
-			mainTypeQualifiedName = EMPTY_STRING;
-			testName = name.substring(name.lastIndexOf(IPath.SEPARATOR) + 1);
-		}
+			case IJavaElement.JAVA_PROJECT:
+			case IJavaElement.PACKAGE_FRAGMENT_ROOT:
+			case IJavaElement.PACKAGE_FRAGMENT: {
+				String name= JavaElementLabels.getTextLabel(element, JavaElementLabels.ALL_FULLY_QUALIFIED);
+				containerHandleId= element.getHandleIdentifier();
+				mainTypeQualifiedName= EMPTY_STRING;
+				testName= name.substring(name.lastIndexOf(IPath.SEPARATOR) + 1);
+			}
 			break;
-		case TYPE: {
-			mainTypeQualifiedName = ((IType) element).getFullyQualifiedName('.'); // don't
-																					// replace,
-																					// fix
-																					// for
-																					// binary
-																					// inner
-																					// types
-			testName = element.getElementName();
-		}
+			case IJavaElement.TYPE: {
+				containerHandleId= EMPTY_STRING;
+				// don't replace, fix for binary inner types
+				mainTypeQualifiedName= ((IType) element).getFullyQualifiedName('.'); 
+				testName= element.getElementName();
+			}
 			break;
-		case METHOD: {
-			IMethod method = (IMethod) element;
-			mainTypeQualifiedName = method.getDeclaringType().getFullyQualifiedName('.');
-			testName = method.getDeclaringType().getElementName() + '.' + method.getElementName();
-		}
+			case IJavaElement.METHOD: {
+				IMethod method= (IMethod) element;
+				containerHandleId= EMPTY_STRING;
+				mainTypeQualifiedName= method.getDeclaringType().getFullyQualifiedName('.');
+				testName= method.getDeclaringType().getElementName() + '.' + method.getElementName();
+			}
 			break;
-		default:
-			throw new IllegalArgumentException("Invalid element type to create a launch configuration: " + element.getClass().getName()); //$NON-NLS-1$
+			default:
+				throw new IllegalArgumentException("Invalid element type to create a launch configuration: " + element.getClass().getName()); //$NON-NLS-1$
 		}
 
-		String launchConfigurationTypeId = getLaunchConfigurationTypeId();
-		ILaunchConfigurationType configType = getLaunchManager().getLaunchConfigurationType(launchConfigurationTypeId);
-		ILaunchConfigurationWorkingCopy wc = configType.newInstance(null, getLaunchManager().generateLaunchConfigurationName(testName));
+		
 
-		wc.setAttribute(ATTR_MAIN_TYPE_NAME, mainTypeQualifiedName);
-		wc.setAttribute(ATTR_PROJECT_NAME, element.getJavaProject().getElementName());
+		ILaunchConfigurationType configType= getLaunchManager().getLaunchConfigurationType(getLaunchConfigurationTypeId());
+		ILaunchConfigurationWorkingCopy wc= configType.newInstance(null, getLaunchManager().generateLaunchConfigurationName(testName));
 
+		wc.setAttribute(IJavaLaunchConfigurationConstants.ATTR_MAIN_TYPE_NAME, mainTypeQualifiedName);
+		wc.setAttribute(IJavaLaunchConfigurationConstants.ATTR_PROJECT_NAME, element.getJavaProject().getElementName());
+	
+		wc.setAttribute(LaunchConfigurationConstants.ATTR_TEST_CONTAINER, containerHandleId);
+		
 		MigrationDelegate.mapResources(wc);
+		
+		if (element instanceof IMethod) {
+			wc.setAttribute(LaunchConfigurationConstants.ATTR_TEST_METHOD_NAME, element.getElementName()); // only set for methods
+		}
 		return wc;
 	}
 
