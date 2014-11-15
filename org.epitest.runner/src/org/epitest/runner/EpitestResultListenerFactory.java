@@ -3,6 +3,9 @@ package org.epitest.runner;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.debug.core.sourcelookup.ISourceContainer;
+import org.eclipse.debug.ui.DebugUITools;
+import org.eclipse.jdt.internal.corext.refactoring.util.JavadocUtil;
 import org.pitest.mutationtest.ClassMutationResults;
 import org.pitest.mutationtest.ListenerArguments;
 import org.pitest.mutationtest.MutationResultListener;
@@ -10,7 +13,7 @@ import org.pitest.mutationtest.MutationResultListenerFactory;
 
 public class EpitestResultListenerFactory implements MutationResultListenerFactory {
 
-	private List<ClassMutationResults> mutationResults = new ArrayList<>();
+	
 
 	@Override
 	public String description() {
@@ -24,22 +27,7 @@ public class EpitestResultListenerFactory implements MutationResultListenerFacto
 
 	@Override
 	public MutationResultListener getListener(ListenerArguments args) {
-
-		return new MutationResultListener() {
-			@Override
-			public void runStart() {
-			}
-
-			@Override
-			public void runEnd() {
-			}
-
-			@Override
-			public void handleMutationResult(ClassMutationResults results) {
-				mutationResults.add(results);
-				System.err.println(results);
-			}
-		};
+		return new MutationResult();
 	}
 
 }

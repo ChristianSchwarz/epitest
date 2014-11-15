@@ -44,5 +44,39 @@
             
       </shortcut>
    </extension>
-
+   <extension
+         id="org.epitest.mutationmarker"
+         point="org.eclipse.core.resources.markers">
+      <super
+            type="org.eclipse.core.resources.textmarker">
+      </super>
+   </extension>
+   <extension
+         point="org.eclipse.ui.editors.annotationTypes">
+      <type
+            markerType="org.epitest.mutationmarker"
+            name="org.epitest.mutationmarker">
+      </type>
+   </extension>
+<extension
+         point="org.eclipse.ui.editors.markerAnnotationSpecification">
+      <specification
+            annotationType="org.epitest.mutationmarker"
+            colorPreferenceKey="org.epitest.mutationmarker.color"
+            colorPreferenceValue="192,255,192"
+            contributesToHeader="false"
+            highlightPreferenceKey="org.epitest.mutationmarker.highlight"
+            highlightPreferenceValue="true"
+            includeOnPreferencePage="true"
+            label="Epitest Marker"
+            overviewRulerPreferenceKey="org.epitest.mutationmarker.overview"
+            overviewRulerPreferenceValue="true"
+            presentationLayer="0"
+            textPreferenceKey="org.epitest.mutationmarker.text"
+            textPreferenceValue="true"
+            textStylePreferenceValue="BOX"
+            verticalRulerPreferenceKey="org.epitest.mutationmarker.ruler"
+            verticalRulerPreferenceValue="true">
+      </specification>
+   </extension>
 </plugin>
