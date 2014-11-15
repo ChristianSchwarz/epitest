@@ -36,6 +36,8 @@ import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.launching.AbstractJavaLaunchConfigurationDelegate;
+import org.pitest.coverage.CoverageSummary;
+import org.pitest.functional.FCollection;
 import org.pitest.mutationtest.commandline.OptionsParser;
 import org.pitest.mutationtest.commandline.ParseResult;
 import org.pitest.mutationtest.commandline.PluginFilter;
@@ -45,7 +47,12 @@ import org.pitest.mutationtest.statistics.MutationStatistics;
 import org.pitest.mutationtest.tooling.AnalysisResult;
 import org.pitest.mutationtest.tooling.CombinedStatistics;
 import org.pitest.mutationtest.tooling.EntryPoint;
+import org.pitest.plugin.ToolClasspathPlugin;
+import org.pitest.util.Glob;
+import org.pitest.util.IsolationUtils;
 import org.pitest.util.Unchecked;
+
+import com.google.common.collect.Lists;
 
 /**
  * Launch configuration delegate for a JUnit test as a Java application.
@@ -59,9 +66,14 @@ import org.pitest.util.Unchecked;
 public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfigurationDelegate {
 
 
-
+	private String pitestCommandLineJar = Activator.getDefault().getPitestCmdLinePath();
 	private String pitestJar = Activator.getDefault().getPitestCorePath();
 
+	
+
+	public LaunchConfigurationDelegate() {
+		
+	}
 
 	/*
 	 * (non-Javadoc)
@@ -238,7 +250,7 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 		return classpathList.toArray(new String[classpathList.size()]);
 	}
 
-	private static class Arguments {
+	private class Arguments {
 
 		private final List<String> args = new ArrayList<>();
 
