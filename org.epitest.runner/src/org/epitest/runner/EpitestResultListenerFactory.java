@@ -27,7 +27,7 @@ public class EpitestResultListenerFactory implements MutationResultListenerFacto
 
 	@Override
 	public MutationResultListener getListener(ListenerArguments args) {
-		return new MutationResult();
+		return new ResultListener();
 	}
 
 }

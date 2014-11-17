@@ -8,11 +8,14 @@ import static java.util.Arrays.stream;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.StreamSupport.stream;
 import static org.eclipse.core.runtime.IStatus.ERROR;
 import static org.eclipse.jdt.core.IJavaElement.PACKAGE_FRAGMENT;
 import static org.eclipse.jdt.core.IPackageFragmentRoot.K_SOURCE;
 import static org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants.ATTR_MAIN_TYPE_NAME;
+import static org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants.ERR_UNSPECIFIED_LAUNCH_CONFIG;
 import static org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants.ERR_UNSPECIFIED_MAIN_TYPE;
+import static org.epitest.runner.Activator.PLUGIN_ID;
 import static org.epitest.runner.LaunchConfigurationConstants.ATTR_TEST_CONTAINER;
 
 import java.io.File;
@@ -24,6 +27,8 @@ import java.util.function.Predicate;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.MultiStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
@@ -45,23 +50,13 @@ import org.pitest.mutationtest.statistics.MutationStatistics;
 import org.pitest.mutationtest.tooling.AnalysisResult;
 import org.pitest.mutationtest.tooling.CombinedStatistics;
 import org.pitest.mutationtest.tooling.EntryPoint;
-import org.pitest.util.Unchecked;
 
 /**
- * Launch configuration delegate for a JUnit test as a Java application.
  * 
- * <p>
- * Clients can instantiate and extend this class.
- * </p>
- * 
- * @since 3.3
  */
 public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfigurationDelegate {
 
-
-
 	private String pitestJar = Activator.getDefault().getPitestCorePath();
-
 
 	/*
 	 * (non-Javadoc)
@@ -78,18 +73,18 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 		tempDir.deleteOnExit();
 
 		String reportDir = tempDir.getAbsolutePath();
-		
+
 		Arguments args = new Arguments()//
 				.add("--classPath", getClasspathList(configuration))//
 				.add("--targetClasses", getUnitsForMutation(configuration)) //
 				.add("--targetTests", getTestUnits(configuration))//
-				.add("--outputFormats", "XML,CSV,HTML,Epitest") //$NON-NLS-1$
+				.add("--outputFormats", "Epitest") //$NON-NLS-1$
 				.add("--sourceDirs", getSourceFolder(javaProject)) //
 				.add("--reportDir", reportDir)//
 				.add("--verbose", "true");
 
 		final PluginServices plugins = PluginServices.makeForContextLoader();
-		
+
 		final OptionsParser parser = new OptionsParser(new PluginFilter(plugins));
 		String[] argArray = args.toArray();
 		final ParseResult pr = parser.parse(argArray);
@@ -97,34 +92,36 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 		if (!pr.isOk()) {
 			tempDir.delete();
 			String message = pr.getErrorMessage().value();
-			System.out.println(">>>> " + message);
-			throw new CoreException(new Status(ERROR, "epitest", message));
+			abort(message, null, ERR_UNSPECIFIED_LAUNCH_CONFIG);
 		} else {
 			final ReportOptions data = pr.getOptions();
 
 			final CombinedStatistics stats = runReport(data, plugins);
 			MutationStatistics mutationStatistics = stats.getMutationStatistics();
-			mutationStatistics.report(System.err);
-			
-			
+
 		}
 
 	}
 
-	private static CombinedStatistics runReport(final ReportOptions data, PluginServices plugins) {
+	private CombinedStatistics runReport(final ReportOptions data, PluginServices plugins) throws CoreException {
 
-		final EntryPoint e = new EntryPoint();
-		final AnalysisResult result = e.execute(null, data, plugins);
+		final EntryPoint entryPoint = new EntryPoint();
+		final AnalysisResult result = entryPoint.execute(null, data, plugins);
+		
+		Iterable<Exception> it = result.getError();
 		if (result.getError().hasSome()) {
-			throw Unchecked.translateCheckedException(result.getError().value());
+			List<IStatus> errors = stream(it.spliterator(), false)//
+					.map((Exception e) -> new Status(ERROR, PLUGIN_ID, e.getMessage(), e))//
+					.collect(toList());
+			IStatus[] errorArray =  errors.toArray(new IStatus[errors.size()]);
+			throw new CoreException(new MultiStatus(PLUGIN_ID, ERROR, errorArray, null,null));
 		}
+
 		return result.getStatistics().value();
 
 	}
 
 	//
-
-
 
 	private static List<String> getSourceFolder(IJavaProject javaProject) throws JavaModelException {
 
@@ -137,8 +134,6 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 				.collect(toList());
 
 	}
-
-	
 
 	private List<String> getUnitsForMutation(ILaunchConfiguration configuration) throws CoreException {
 		IJavaProject javaProject = getJavaProject(configuration);
@@ -224,18 +219,11 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 		return emptyList();
 	}
 
-	public List<String> getClasspathList(ILaunchConfiguration configuration) throws CoreException {
+	private List<String> getClasspathList(ILaunchConfiguration configuration) throws CoreException {
 		List<String> classpath = newArrayList(super.getClasspath(configuration));
-//		classpath.add(pitestCommandLineJar);
 		classpath.add(pitestJar);
 
 		return classpath;
-	}
-
-	public String[] getClasspath(ILaunchConfiguration configuration) throws CoreException {
-
-		List<String> classpathList = getClasspathList(configuration);
-		return classpathList.toArray(new String[classpathList.size()]);
 	}
 
 	private static class Arguments {

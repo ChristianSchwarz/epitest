@@ -1,5 +1,9 @@
 package org.epitest.runner;
 
+import static org.eclipse.core.resources.IMarker.CHAR_END;
+import static org.eclipse.core.resources.IMarker.CHAR_START;
+import static org.eclipse.core.resources.IMarker.LINE_NUMBER;
+import static org.eclipse.core.resources.IMarker.MESSAGE;
 import static org.eclipse.jdt.core.IPackageFragmentRoot.K_SOURCE;
 
 import org.eclipse.core.resources.IMarker;
@@ -14,10 +18,14 @@ import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
+import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.text.Document;
 import org.pitest.mutationtest.ClassMutationResults;
+import org.pitest.mutationtest.MutationResult;
 import org.pitest.mutationtest.MutationResultListener;
+import org.pitest.mutationtest.engine.MutationDetails;
 
-final class MutationResult implements MutationResultListener {
+final class ResultListener implements MutationResultListener {
 
 	@Override
 	public void runStart() {
@@ -71,27 +79,56 @@ final class MutationResult implements MutationResultListener {
 
 	private void printICompilationUnitInfo(ClassMutationResults results, IPackageFragment mypackage) throws CoreException {
 		for (ICompilationUnit unit : mypackage.getCompilationUnits()) {
+			
 			String fileName = results.getFileName();
 			String elementName = unit.getElementName();
+			
 			if (fileName.equals(elementName)) {
-				IResource resource = unit.getResource();
-				createMarker(results, resource);
+				
+				createMarker(results, unit);
 			}
 		}
 	}
 
-	private void createMarker(ClassMutationResults results, IResource resource) throws CoreException {
+	private void createMarker(ClassMutationResults results, ICompilationUnit unit) throws CoreException {
+		IResource resource = unit.getResource();
+		
+		Document document = new Document(unit.getSource());
+		for (MutationResult result : results.getMutations()) {
+			MutationDetails details = result.getDetails();
+			
+			
+			String statusDescription = details.getDescription();
+			int lineNumber = details.getLineNumber();
 
-		for (org.pitest.mutationtest.MutationResult result : results.getMutations()) {
-			IMarker marker = resource.createMarker("org.epitest.mutationmarker");
-			String statusDescription = result.getStatusDescription();
-			int lineNumber = result.getDetails().getLineNumber();
-			marker.setAttribute(IMarker.MESSAGE, statusDescription);
-			marker.setAttribute(IMarker.LINE_NUMBER, lineNumber);
-			marker.setAttribute(IMarker.CHAR_START, 0);
-			marker.setAttribute(IMarker.CHAR_END, 999);
+			IMarker mutationMarker = resource.createMarker("org.epitest.mutationmarker");
+			mutationMarker.setAttribute(MESSAGE, statusDescription);
+			mutationMarker.setAttribute(LINE_NUMBER, lineNumber);
+			
+		
+			int offset = getLineOffset(document, lineNumber);
+			int lineLength = getLineLength(document, lineNumber);
+			IMarker coverageMarker = resource.createMarker("org.epitest.mutationmarker");
+			coverageMarker.setAttribute(CHAR_START, offset);
+			coverageMarker.setAttribute(CHAR_END, offset+lineLength);
 
 		}
 
+	}
+
+	private int getLineLength(Document document, int lineNumber){
+		try {
+			return document.getLineLength(lineNumber-1);
+		} catch (BadLocationException e) {
+			throw new IllegalStateException(e.getMessage(),e);
+		}
+	}
+
+	private int getLineOffset(Document document, int lineNumber) {
+		try {
+			return document.getLineOffset(lineNumber-1);
+		} catch (BadLocationException e) {
+			throw new IllegalStateException(e.getMessage(),e);
+		}
 	}
 }
