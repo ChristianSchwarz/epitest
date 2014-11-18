@@ -44,9 +44,10 @@
             
       </shortcut>
    </extension>
+   
    <extension
          id="org.epitest.mutationmarker"
-         name="Mutation marker"
+         name="PiTest - Mutation marker"
          point="org.eclipse.core.resources.markers">
       <super
             type="org.eclipse.core.resources.textmarker">
@@ -55,24 +56,50 @@
             type="org.eclipse.core.resources.problemmarker">
       </super>
    </extension>
+   
+   <extension
+         id="org.epitest.coverage.no"
+         name="PiTest - Line not covered"
+         point="org.eclipse.core.resources.markers">
+      <super
+            type="org.eclipse.core.resources.textmarker">
+      </super>
+   </extension>
+   <extension
+         id="org.epitest.coverage.yes"
+         name="PiTest - Line covered"
+         point="org.eclipse.core.resources.markers">
+      <super
+            type="org.eclipse.core.resources.textmarker">
+      </super>
+   </extension>
    <extension
          point="org.eclipse.ui.editors.annotationTypes">
       <type
             markerType="org.epitest.mutationmarker"
             name="org.epitest.mutationmarker">
       </type>
-   </extension>
+      <type
+            markerType="org.epitest.coverage.yes"
+            name="org.epitest.coverage.yes">
+      </type>
+       <type
+            markerType="org.epitest.coverage.no"
+            name="org.epitest.coverage.no">
+      </type>
+       </extension>
+   
 <extension
          point="org.eclipse.ui.editors.markerAnnotationSpecification">
       <specification
             annotationType="org.epitest.mutationmarker"
             colorPreferenceKey="org.epitest.mutationmarker.color"
-            colorPreferenceValue="192,255,192"
-            contributesToHeader="false"
+			colorPreferenceValue="192,255,192"           
+ 			contributesToHeader="false"
             highlightPreferenceKey="org.epitest.mutationmarker.highlight"
             highlightPreferenceValue="true"
             includeOnPreferencePage="true"
-            label="Epitest Marker"
+            label="PiTestMutation Marker"
             overviewRulerPreferenceKey="org.epitest.mutationmarker.overview"
             overviewRulerPreferenceValue="true"
             presentationLayer="0"
@@ -82,5 +109,48 @@
             verticalRulerPreferenceKey="org.epitest.mutationmarker.ruler"
             verticalRulerPreferenceValue="true">
       </specification>
-   </extension>
+
+      <specification
+            annotationType="org.epitest.coverage.yes"
+            colorPreferenceKey="org.epitest.coverage.yes.color"
+            colorPreferenceValue="192,255,192"
+            contributesToHeader="false"
+            highlightPreferenceKey="org.epitest.coverage.yes.highlight"
+            highlightPreferenceValue="true"
+            includeOnPreferencePage="true"
+            label="PiTest - Coverage"
+            overviewRulerPreferenceKey="org.epitest.coverage.yes.overview"
+            overviewRulerPreferenceValue="true"
+            presentationLayer="0"
+            textPreferenceKey="org.epitest.coverage.yes.text"
+            textPreferenceValue="true"
+            textStylePreferenceValue="BOX"
+            verticalRulerPreferenceKey="org.epitest.coverage.yes.ruler"
+            verticalRulerPreferenceValue="true">
+      </specification>
+            <specification
+            annotationType="org.epitest.coverage.no"
+            colorPreferenceKey="org.epitest.coverage.no.color"
+            colorPreferenceValue="255,192,192"
+            contributesToHeader="false"
+            highlightPreferenceKey="org.epitest.coverage.no.highlight"
+            highlightPreferenceValue="true"
+            includeOnPreferencePage="true"
+            label="PiTest - No coverage"
+            overviewRulerPreferenceKey="org.epitest.coverage.no.overview"
+            overviewRulerPreferenceValue="true"
+            presentationLayer="0"
+            textPreferenceKey="org.epitest.coverage.no.text"
+            textPreferenceValue="true"
+            textStylePreferenceValue="BOX"
+            verticalRulerPreferenceKey="org.epitest.coverage.no.ruler"
+            verticalRulerPreferenceValue="true">
+      </specification>
+      </extension>
+   
+   
+   
+
+     
+
 </plugin>
