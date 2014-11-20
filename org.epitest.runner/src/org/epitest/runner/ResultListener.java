@@ -100,24 +100,28 @@ final class ResultListener implements MutationResultListener {
 
 			
 			MutationDetails details = result.getDetails();
-
+			
 			String mutationDdescription = details.getDescription();
 			int lineNumber = details.getLineNumber();
+			
 			int offset = getLineOffset(document, lineNumber);
-			int lineLength = getLineLength(document, lineNumber);
-
+			int length = getLineLength(document, lineNumber);
+			
+		
+			
 			DetectionStatus status = result.getStatus();
 			switch (status) {
 
 			case SURVIVED:
-				highlightMissingCoverage(resource, offset, lineLength);
 				createMutationDescription(resource, mutationDdescription, lineNumber);
+				highlightMutation(resource, offset, length);
+				
 				break;
 			case NO_COVERAGE:
-				highlightMissingCoverage(resource, offset, lineLength);
+				highlightMissingCoverage(resource, offset, length);
 				break;
 			case KILLED:
-				highlightCoverage(resource, offset, lineLength);
+				highlightCoverage(resource, offset, length);
 				break;
 			default:
 				break;
@@ -127,6 +131,12 @@ final class ResultListener implements MutationResultListener {
 
 	}
 
+	private void highlightMutation(IResource resource, int offset, int lineLength) throws CoreException {
+		IMarker coverageMarker = resource.createMarker("org.epitest.mutationmarker");
+		coverageMarker.setAttribute(CHAR_START, offset);
+		coverageMarker.setAttribute(CHAR_END, offset + lineLength);
+	}
+	
 	private void highlightCoverage(IResource resource, int offset, int lineLength) throws CoreException {
 		IMarker coverageMarker = resource.createMarker("org.epitest.coverage.yes");
 		coverageMarker.setAttribute(CHAR_START, offset);

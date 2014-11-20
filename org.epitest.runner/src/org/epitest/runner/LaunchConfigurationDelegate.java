@@ -46,7 +46,6 @@ import org.pitest.mutationtest.commandline.ParseResult;
 import org.pitest.mutationtest.commandline.PluginFilter;
 import org.pitest.mutationtest.config.PluginServices;
 import org.pitest.mutationtest.config.ReportOptions;
-import org.pitest.mutationtest.statistics.MutationStatistics;
 import org.pitest.mutationtest.tooling.AnalysisResult;
 import org.pitest.mutationtest.tooling.CombinedStatistics;
 import org.pitest.mutationtest.tooling.EntryPoint;
@@ -96,9 +95,9 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 		} else {
 			final ReportOptions data = pr.getOptions();
 
-			final CombinedStatistics stats = runReport(data, plugins);
-			MutationStatistics mutationStatistics = stats.getMutationStatistics();
-
+			runReport(data, plugins);
+			
+			
 		}
 
 	}
