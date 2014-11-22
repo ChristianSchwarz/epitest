@@ -9,6 +9,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.StreamSupport.stream;
+import static org.eclipse.core.resources.IResource.DEPTH_INFINITE;
 import static org.eclipse.core.runtime.IStatus.ERROR;
 import static org.eclipse.jdt.core.IJavaElement.PACKAGE_FRAGMENT;
 import static org.eclipse.jdt.core.IPackageFragmentRoot.K_SOURCE;
@@ -17,6 +18,9 @@ import static org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants.ERR_UN
 import static org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants.ERR_UNSPECIFIED_MAIN_TYPE;
 import static org.epitest.runner.Activator.PLUGIN_ID;
 import static org.epitest.runner.LaunchConfigurationConstants.ATTR_TEST_CONTAINER;
+import static org.epitest.runner.PiTestMarker.COVERAGE;
+import static org.epitest.runner.PiTestMarker.NO_COVERAGE;
+import static org.epitest.runner.PiTestMarker.SURVIVED;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -25,6 +29,8 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.eclipse.core.resources.IMarker;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -68,6 +74,7 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 	 */
 	public synchronized void launch(ILaunchConfiguration configuration, String mode, ILaunch launch, IProgressMonitor monitor) throws CoreException {
 		IJavaProject javaProject = getJavaProject(configuration);
+		removeMarker(javaProject.getResource());
 		File tempDir = createTempDir();
 		tempDir.deleteOnExit();
 
@@ -100,6 +107,20 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 			
 		}
 
+	}
+
+	private void removeMarker(IResource resource) throws CoreException {
+		   removeMarker(resource, COVERAGE);
+		   removeMarker(resource, NO_COVERAGE);
+		   removeMarker(resource, SURVIVED);
+		   
+		  
+		
+	}
+
+	private void removeMarker(IResource resource, String type) throws CoreException {
+		for (IMarker m: resource.findMarkers(type, true, DEPTH_INFINITE))
+			   m.delete();
 	}
 
 	private CombinedStatistics runReport(final ReportOptions data, PluginServices plugins) throws CoreException {
