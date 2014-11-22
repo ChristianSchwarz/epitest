@@ -132,23 +132,19 @@ final class ResultListener implements MutationResultListener {
 	}
 
 	private boolean markKilled(final SourceFile f, List<MutationResult> mutationResults, Integer lineNumber) throws CoreException {
-		List<MutationResult> lineMutations = filter(mutationResults, KILLED);
-		if (lineMutations.isEmpty())
-			return false;
+		boolean killed = contains(mutationResults, KILLED);
+		if (killed)
+			f.createTextMarker("org.epitest.coverage.yes", lineNumber);
 
-		f.createTextMarker("org.epitest.coverage.yes", lineNumber);
-
-		return true;
+		return killed;
 	}
 
 	private boolean markNoCoverage(final SourceFile f, List<MutationResult> mutationResults, Integer lineNumber) throws CoreException {
-		List<MutationResult> lineMutations = filter(mutationResults, NO_COVERAGE);
-		if (lineMutations.isEmpty())
-			return false;
+		boolean hasNoCoverage = contains(mutationResults, NO_COVERAGE);
+		if (hasNoCoverage)
+			f.createTextMarker("org.epitest.coverage.no", lineNumber);
 
-		f.createTextMarker("org.epitest.coverage.no", lineNumber);
-
-		return true;
+		return hasNoCoverage;
 	}
 
 	private boolean markSurvived(final SourceFile f, List<MutationResult> mutationResults, Integer lineNumber) throws CoreException {
@@ -164,11 +160,15 @@ final class ResultListener implements MutationResultListener {
 		return true;
 	}
 
-	private List<MutationResult> filter(List<MutationResult> m, DetectionStatus status) {
+	private static List<MutationResult> filter(List<MutationResult> m, DetectionStatus status) {
 		return m.stream().filter(statusIs(status)).collect(toList());
 	}
 
-	private Predicate<MutationResult> statusIs(DetectionStatus status) {
+	private static boolean contains(List<MutationResult> m, DetectionStatus status) {
+		return m.stream().anyMatch(statusIs(status));
+	}
+
+	private static Predicate<MutationResult> statusIs(DetectionStatus status) {
 		return (MutationResult r) -> r.getStatus() == status;
 	}
 
