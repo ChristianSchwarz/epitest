@@ -84,8 +84,8 @@
             name="org.epitest.coverage.yes">
       </type>
        <type
-            markerType="org.epitest.coverage.no"
-            name="org.epitest.coverage.no">
+             markerType="org.epitest.coverage.no"
+             name="org.epitest.coverage.no">
       </type>
        </extension>
    
@@ -94,10 +94,11 @@
       <specification
             annotationType="org.epitest.mutationmarker"
             colorPreferenceKey="org.epitest.mutationmarker.color"
-			colorPreferenceValue="255,192,255"           
- 			contributesToHeader="false"
+            colorPreferenceValue="255,192,255"
+            contributesToHeader="false"
             highlightPreferenceKey="org.epitest.mutationmarker.highlight"
             highlightPreferenceValue="true"
+            icon="/res/mutation_marker.png"
             includeOnPreferencePage="true"
             label="PiTest - Mutation Survived"
             overviewRulerPreferenceKey="org.epitest.mutationmarker.overview"
@@ -105,7 +106,7 @@
             presentationLayer="0"
             textPreferenceKey="org.epitest.mutationmarker.text"
             textPreferenceValue="true"
-            textStylePreferenceValue="IBEAM"
+            textStylePreferenceValue="DASHED_BOX"
             verticalRulerPreferenceKey="org.epitest.mutationmarker.ruler"
             verticalRulerPreferenceValue="true">
       </specification>
@@ -124,7 +125,7 @@
             presentationLayer="0"
             textPreferenceKey="org.epitest.coverage.yes.text"
             textPreferenceValue="true"
-            textStylePreferenceValue="BOX"
+            textStylePreferenceValue="DASHED_BOX"
             verticalRulerPreferenceKey="org.epitest.coverage.yes.ruler"
             verticalRulerPreferenceValue="true">
       </specification>
@@ -142,7 +143,7 @@
             presentationLayer="0"
             textPreferenceKey="org.epitest.coverage.no.text"
             textPreferenceValue="true"
-            textStylePreferenceValue="BOX"
+            textStylePreferenceValue="DASHED_BOX"
             verticalRulerPreferenceKey="org.epitest.coverage.no.ruler"
             verticalRulerPreferenceValue="true">
       </specification>
