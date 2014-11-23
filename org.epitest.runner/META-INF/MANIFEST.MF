@@ -3,7 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: Runner
 Bundle-SymbolicName: org.epitest.runner;singleton:=true
 Bundle-Version: 1.0.0.qualifier
-Bundle-Activator: org.epitest.runner.Activator
+Bundle-Activator: org.epitest.Activator
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
  org.eclipse.jdt.launching,

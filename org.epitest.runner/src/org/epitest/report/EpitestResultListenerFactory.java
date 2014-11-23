@@ -1,4 +1,4 @@
-package org.epitest.runner;
+package org.epitest.report;
 
 import java.util.ArrayList;
 import java.util.List;

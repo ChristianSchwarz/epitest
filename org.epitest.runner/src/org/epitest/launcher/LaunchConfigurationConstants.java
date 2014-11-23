@@ -1,4 +1,4 @@
-package org.epitest.runner;
+package org.epitest.launcher;
 
 public class LaunchConfigurationConstants {
 

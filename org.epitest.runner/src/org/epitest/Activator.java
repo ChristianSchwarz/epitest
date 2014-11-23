@@ -1,4 +1,4 @@
-package org.epitest.runner;
+package org.epitest;
 
 import static com.google.common.io.Files.copy;
 

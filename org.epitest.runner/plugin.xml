@@ -4,7 +4,7 @@
    <extension
          point="org.eclipse.debug.core.launchConfigurationTypes">
       <launchConfigurationType
-            delegate="org.epitest.runner.LaunchConfigurationDelegate"
+            delegate="org.epitest.launcher.LaunchConfigurationDelegate"
             id="org.epitest.runner.launchConfigurationType"
             modes="run"
             name="PiTest Muatation Test">
@@ -13,7 +13,7 @@
    <extension
          point="org.eclipse.debug.ui.launchConfigurationTabGroups">
       <launchConfigurationTabGroup
-            class="org.epitest.runner.LaunchConfigurationTabGroup"
+            class="org.epitest.launcher.ui.LaunchConfigurationTabGroup"
             id="org.epitest.runner.launchConfigurationTabGroup"
             type="org.epitest.runner.launchConfigurationType">
       </launchConfigurationTabGroup>
@@ -21,7 +21,7 @@
    <extension
          point="org.eclipse.debug.ui.launchShortcuts">
       <shortcut
-            class="org.epitest.runner.LaunchShortcut"
+            class="org.epitest.launcher.ui.LaunchShortcut"
             id="org.epitest.runner.shortcut"
             label="Epitest"
             modes="run">

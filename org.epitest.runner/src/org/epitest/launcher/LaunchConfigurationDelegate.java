@@ -1,4 +1,4 @@
-package org.epitest.runner;
+package org.epitest.launcher;
 
 import static com.google.common.base.Joiner.on;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -10,17 +10,18 @@ import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.StreamSupport.stream;
 import static org.eclipse.core.resources.IResource.DEPTH_INFINITE;
+import static org.eclipse.core.runtime.IProgressMonitor.UNKNOWN;
 import static org.eclipse.core.runtime.IStatus.ERROR;
 import static org.eclipse.jdt.core.IJavaElement.PACKAGE_FRAGMENT;
 import static org.eclipse.jdt.core.IPackageFragmentRoot.K_SOURCE;
 import static org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants.ATTR_MAIN_TYPE_NAME;
 import static org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants.ERR_UNSPECIFIED_LAUNCH_CONFIG;
 import static org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants.ERR_UNSPECIFIED_MAIN_TYPE;
-import static org.epitest.runner.Activator.PLUGIN_ID;
-import static org.epitest.runner.LaunchConfigurationConstants.ATTR_TEST_CONTAINER;
-import static org.epitest.runner.PiTestMarker.COVERAGE;
-import static org.epitest.runner.PiTestMarker.NO_COVERAGE;
-import static org.epitest.runner.PiTestMarker.SURVIVED;
+import static org.epitest.Activator.PLUGIN_ID;
+import static org.epitest.launcher.LaunchConfigurationConstants.ATTR_TEST_CONTAINER;
+import static org.epitest.report.Markers.COVERAGE;
+import static org.epitest.report.Markers.NO_COVERAGE;
+import static org.epitest.report.Markers.SURVIVED;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -35,6 +36,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.MultiStatus;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
@@ -47,6 +49,7 @@ import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.launching.AbstractJavaLaunchConfigurationDelegate;
+import org.epitest.Activator;
 import org.pitest.mutationtest.commandline.OptionsParser;
 import org.pitest.mutationtest.commandline.ParseResult;
 import org.pitest.mutationtest.commandline.PluginFilter;
@@ -73,68 +76,90 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 	 * org.eclipse.core.runtime.IProgressMonitor)
 	 */
 	public synchronized void launch(ILaunchConfiguration configuration, String mode, ILaunch launch, IProgressMonitor monitor) throws CoreException {
+		if (monitor == null)
+			monitor = new NullProgressMonitor();
+
+		monitor.beginTask(configuration.getName(), UNKNOWN);
+		
 		IJavaProject javaProject = getJavaProject(configuration);
 		removeMarker(javaProject.getResource());
-		File tempDir = createTempDir();
-		tempDir.deleteOnExit();
+		File reportDir = createReportDir();
+		try {
 
-		String reportDir = tempDir.getAbsolutePath();
+	
 
-		Arguments args = new Arguments()//
+			final PluginServices plugins = PluginServices.makeForContextLoader();
+
+			final OptionsParser parser = new OptionsParser(new PluginFilter(plugins));
+			String[] argArray = createPiTestArguments(configuration, javaProject, reportDir);
+			final ParseResult pr = parser.parse(argArray);
+
+			if (!pr.isOk()) {
+				String message = pr.getErrorMessage().value();
+				abort(message, null, ERR_UNSPECIFIED_LAUNCH_CONFIG);
+			} else {
+				final ReportOptions data = pr.getOptions();
+
+				runReport(data, plugins);
+			}
+		} finally {
+			monitor.done();
+			reportDir.delete();
+		}
+	}
+
+	/**
+	 * 
+	 * @param configuration
+	 * @param javaProject
+	 * @param reportDir
+	 * @return
+	 * @throws CoreException
+	 */
+	private String[] createPiTestArguments(ILaunchConfiguration configuration, IJavaProject javaProject, File reportDir) throws CoreException {
+		return new Arguments()//
 				.add("--classPath", getClasspathList(configuration))//
 				.add("--targetClasses", getUnitsForMutation(configuration)) //
 				.add("--targetTests", getTestUnits(configuration))//
 				.add("--outputFormats", "Epitest") //$NON-NLS-1$
 				.add("--sourceDirs", getSourceFolder(javaProject)) //
-				.add("--reportDir", reportDir)//
-				.add("--verbose", "true");
+				.add("--reportDir", reportDir.getAbsolutePath())//
+				.add("--verbose", "true")//
+				.add("--threads", Runtime.getRuntime().availableProcessors())//
+				.add("--timestampedReports", false)//
+				.toArray();
+	}
 
-		final PluginServices plugins = PluginServices.makeForContextLoader();
-
-		final OptionsParser parser = new OptionsParser(new PluginFilter(plugins));
-		String[] argArray = args.toArray();
-		final ParseResult pr = parser.parse(argArray);
-
-		if (!pr.isOk()) {
-			tempDir.delete();
-			String message = pr.getErrorMessage().value();
-			abort(message, null, ERR_UNSPECIFIED_LAUNCH_CONFIG);
-		} else {
-			final ReportOptions data = pr.getOptions();
-
-			runReport(data, plugins);
-			
-			
-		}
-
+	private File createReportDir() {
+		File tempDir = createTempDir();
+		tempDir.deleteOnExit();
+		return tempDir;
 	}
 
 	private void removeMarker(IResource resource) throws CoreException {
-		   removeMarker(resource, COVERAGE);
-		   removeMarker(resource, NO_COVERAGE);
-		   removeMarker(resource, SURVIVED);
-		   
-		  
-		
+		removeMarker(resource, COVERAGE);
+		removeMarker(resource, NO_COVERAGE);
+		removeMarker(resource, SURVIVED);
+
 	}
 
 	private void removeMarker(IResource resource, String type) throws CoreException {
-		for (IMarker m: resource.findMarkers(type, true, DEPTH_INFINITE))
-			   m.delete();
+		for (IMarker m : resource.findMarkers(type, true, DEPTH_INFINITE))
+			m.delete();
 	}
 
 	private CombinedStatistics runReport(final ReportOptions data, PluginServices plugins) throws CoreException {
 
 		final EntryPoint entryPoint = new EntryPoint();
 		final AnalysisResult result = entryPoint.execute(null, data, plugins);
-		
+
 		Iterable<Exception> it = result.getError();
 		if (result.getError().hasSome()) {
 			List<IStatus> errors = stream(it.spliterator(), false)//
 					.map((Exception e) -> new Status(ERROR, PLUGIN_ID, e.getMessage(), e))//
 					.collect(toList());
-			IStatus[] errorArray =  errors.toArray(new IStatus[errors.size()]);
-			throw new CoreException(new MultiStatus(PLUGIN_ID, ERROR, errorArray, null,null));
+			IStatus[] errorArray = errors.toArray(new IStatus[errors.size()]);
+			throw new CoreException(new MultiStatus(PLUGIN_ID, ERROR, errorArray, null, null));
 		}
 
 		return result.getStatistics().value();
@@ -254,6 +279,14 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 			args.add(checkNotNull(attribute));
 			args.add(checkNotNull(value));
 			return this;
+		}
+
+		public Arguments add(String attribute, boolean b) {
+			return add(attribute, Boolean.toString(b));
+		}
+
+		public Arguments add(String attribute, Number value) {
+			return add(attribute, value.toString());
 		}
 
 		Arguments add(String attribute, Collection<String> values) {

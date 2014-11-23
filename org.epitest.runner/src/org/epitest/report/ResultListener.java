@@ -1,4 +1,4 @@
-package org.epitest.runner;
+package org.epitest.report;
 
 import static java.util.stream.Collectors.toList;
 import static org.eclipse.core.resources.IMarker.CHAR_END;

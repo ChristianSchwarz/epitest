@@ -1,4 +1,4 @@
-package org.epitest.runner;
+package org.epitest.launcher.ui;
 
 import static org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants.ATTR_MAIN_TYPE_NAME;
 import static org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants.ATTR_PROJECT_NAME;

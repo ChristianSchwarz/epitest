@@ -1,4 +1,4 @@
-package org.epitest.runner;
+package org.epitest.launcher.ui;
 
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
@@ -21,7 +21,7 @@ public class EpitestArgumentsTab extends  AbstractLaunchConfigurationTab {
 
 	@Override
 	public void performApply(ILaunchConfigurationWorkingCopy configuration) {
-		configuration.setAttribute("xxs", "sxs");
+		
 	}
 
 	@Override
