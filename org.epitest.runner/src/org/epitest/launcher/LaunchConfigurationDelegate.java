@@ -1,7 +1,5 @@
 package org.epitest.launcher;
 
-import static com.google.common.base.Joiner.on;
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.io.Files.createTempDir;
 import static java.util.Arrays.stream;
@@ -19,13 +17,11 @@ import static org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants.ERR_UN
 import static org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants.ERR_UNSPECIFIED_MAIN_TYPE;
 import static org.epitest.Activator.PLUGIN_ID;
 import static org.epitest.launcher.LaunchConfigurationConstants.ATTR_TEST_CONTAINER;
-import static org.epitest.report.Markers.COVERAGE;
-import static org.epitest.report.Markers.NO_COVERAGE;
-import static org.epitest.report.Markers.SURVIVED;
+import static org.epitest.report.Markers.MARKER_COVERAGE;
+import static org.epitest.report.Markers.MARKER_NO_COVERAGE;
+import static org.epitest.report.Markers.MARKER_SURVIVED;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -137,9 +133,9 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 	}
 
 	private void removeMarker(IResource resource) throws CoreException {
-		removeMarker(resource, COVERAGE);
-		removeMarker(resource, NO_COVERAGE);
-		removeMarker(resource, SURVIVED);
+		removeMarker(resource, MARKER_COVERAGE);
+		removeMarker(resource, MARKER_NO_COVERAGE);
+		removeMarker(resource, MARKER_SURVIVED);
 
 	}
 
@@ -219,7 +215,7 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 			}
 		}
 
-		abort("Error not classes under test found! Container-Handle was:" + containerHandle + " , test class name:" + testClassName, null, ERR_UNSPECIFIED_MAIN_TYPE);
+		abort("Error no classes under test found! Container-Handle was:" + containerHandle + " , test class name:" + testClassName, null, ERR_UNSPECIFIED_MAIN_TYPE);
 		return emptyList();
 	}
 
@@ -269,33 +265,6 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 		classpath.add(pitestJar);
 
 		return classpath;
-	}
-
-	private static class Arguments {
-
-		private final List<String> args = new ArrayList<>();
-
-		Arguments add(String attribute, String value) {
-			args.add(checkNotNull(attribute));
-			args.add(checkNotNull(value));
-			return this;
-		}
-
-		public Arguments add(String attribute, boolean b) {
-			return add(attribute, Boolean.toString(b));
-		}
-
-		public Arguments add(String attribute, Number value) {
-			return add(attribute, value.toString());
-		}
-
-		Arguments add(String attribute, Collection<String> values) {
-			return add(attribute, on(',').join(values));
-		}
-
-		String[] toArray() {
-			return args.toArray(new String[args.size()]);
-		}
 	}
 
 }
