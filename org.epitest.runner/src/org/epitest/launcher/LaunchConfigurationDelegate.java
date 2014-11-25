@@ -22,6 +22,7 @@ import static org.epitest.report.Markers.MARKER_NO_COVERAGE;
 import static org.epitest.report.Markers.MARKER_SURVIVED;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -200,11 +201,7 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 			case IJavaElement.PACKAGE_FRAGMENT_ROOT:
 				IPackageFragmentRoot packageFragmentRoot = ((IPackageFragmentRoot) element);
 
-				List<String> packages = stream(packageFragmentRoot.getChildren())//
-						.filter((IJavaElement e) -> e.getElementType() == PACKAGE_FRAGMENT)//
-						.map((IJavaElement e) -> e.getElementName() + ".*")//
-						.collect(toList());
-				return packages;
+				return getPackages(packageFragmentRoot);
 
 			case PACKAGE_FRAGMENT:
 				IPackageFragment packageFragment = ((IPackageFragment) element);
@@ -220,7 +217,7 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 	}
 
 	private List<String> getTestUnits(ILaunchConfiguration configuration) throws CoreException {
-		// IJavaProject javaProject = getJavaProject(configuration);
+		IJavaProject javaProject = getJavaProject(configuration);
 		String containerHandle = configuration.getAttribute(ATTR_TEST_CONTAINER, "");
 		String testClassName = configuration.getAttribute(ATTR_MAIN_TYPE_NAME, "");
 		if (!testClassName.isEmpty()) {
@@ -235,17 +232,17 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 
 			int elementType = element.getElementType();
 			switch (elementType) {
-			// case IJavaElement.JAVA_PROJECT:
-			// javaProject.getAllPackageFragmentRoots()
-
+ 			 case IJavaElement.JAVA_PROJECT:
+ 				 List<String> packages = new ArrayList<String>();
+				IPackageFragmentRoot[] allPackageFragmentRoots = javaProject.getAllPackageFragmentRoots();
+				for (IPackageFragmentRoot packageFragmentRoot : allPackageFragmentRoots) 
+					packages.addAll(getPackages(packageFragmentRoot));
+				
+				return packages;
 			case IJavaElement.PACKAGE_FRAGMENT_ROOT:
 				IPackageFragmentRoot packageFragmentRoot = ((IPackageFragmentRoot) element);
 
-				List<String> packages = stream(packageFragmentRoot.getChildren())//
-						.filter((IJavaElement e) -> e.getElementType() == PACKAGE_FRAGMENT)//
-						.map((IJavaElement e) -> e.getElementName() + ".*")//
-						.collect(toList());
-				return packages;
+				return getPackages(packageFragmentRoot);
 
 			case PACKAGE_FRAGMENT:
 				IPackageFragment packageFragment = ((IPackageFragment) element);
@@ -258,6 +255,14 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 
 		abort("Error not classes under test found! Container-Handle was:" + containerHandle + " , test class name:" + testClassName, null, ERR_UNSPECIFIED_MAIN_TYPE);
 		return emptyList();
+	}
+
+	private List<String> getPackages(IPackageFragmentRoot packageFragmentRoot) throws JavaModelException {
+		List<String> packages = stream(packageFragmentRoot.getChildren())//
+				.filter((IJavaElement e) -> e.getElementType() == PACKAGE_FRAGMENT)//
+				.map((IJavaElement e) -> e.getElementName() + ".*")//
+				.collect(toList());
+		return packages;
 	}
 
 	private List<String> getClasspathList(ILaunchConfiguration configuration) throws CoreException {
