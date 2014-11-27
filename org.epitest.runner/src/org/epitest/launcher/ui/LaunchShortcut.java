@@ -1,4 +1,4 @@
-package org.epitest.runner;
+package org.epitest.launcher.ui;
 
 import static java.util.Collections.emptyList;
 import static org.eclipse.jdt.core.IJavaElement.CLASS_FILE;
@@ -49,6 +49,7 @@ import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.dialogs.ElementListSelectionDialog;
+import org.epitest.launcher.LaunchConfigurationConstants;
 
 import com.google.common.collect.ImmutableList;
 

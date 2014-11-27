@@ -1,4 +1,4 @@
-package org.epitest.runner;
+package org.epitest;
 
 import static com.google.common.io.Files.copy;
 
@@ -28,9 +28,9 @@ public class Activator extends AbstractUIPlugin {
 
 	private String pitestCorePath;
 	
-	private final static String PITEST_CMD_LINE_JAR ="pitest-command-line-1.1.1.jar";
+	private final static String PITEST_CMD_LINE_JAR ="pitest-command-line-1.1.2.jar";
 
-	private static final String PITEST_JAR = "pitest-1.1.1.jar";
+	private static final String PITEST_JAR = "pitest-1.1.2.jar";
 
 
 	public void start(BundleContext context) throws Exception {

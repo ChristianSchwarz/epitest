@@ -1,9 +1,9 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: Runner
-Bundle-SymbolicName: org.epitest.runner;singleton:=true
-Bundle-Version: 1.0.0.qualifier
-Bundle-Activator: org.epitest.runner.Activator
+Bundle-Name: PiTest for Eclipse
+Bundle-SymbolicName: org.epitest;singleton:=true
+Bundle-Version: 0.0.1.qualifier
+Bundle-Activator: org.epitest.Activator
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
  org.eclipse.jdt.launching,
@@ -12,9 +12,10 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.jdt.core,
  org.eclipse.jdt.ui,
  com.google.guava;bundle-version="15.0.0",
+ org.eclipse.jface.text;bundle-version="3.9.1",
  org.junit;bundle-version="4.11.0"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy
 Bundle-ClassPath: .,
- pitest-1.1.1.jar,
- pitest-command-line-1.1.1.jar
+ pitest-1.1.2.jar,
+ pitest-command-line-1.1.2.jar

@@ -1,4 +1,4 @@
-package org.epitest.runner;
+package org.epitest.launcher.ui;
 
 import org.eclipse.debug.ui.AbstractLaunchConfigurationTabGroup;
 import org.eclipse.debug.ui.CommonTab;
