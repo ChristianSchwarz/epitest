@@ -87,11 +87,12 @@ final class ResultListener implements MutationResultListener {
 		Collection<MutationResult> mutations = results.getMutations();
 		ListMultimap<Integer, MutationResult> m = ArrayListMultimap.create(mutations.size(), 2);
 
-		mutations.forEach((MutationResult r) -> {
+		for (MutationResult r : mutations) {
 			MutationDetails details = r.getDetails();
 			int lineNumber = details.getLineNumber();
 			m.put(lineNumber, r);
-		});
+		}
+		
 		return m;
 	}
 

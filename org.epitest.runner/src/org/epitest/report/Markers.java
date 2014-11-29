@@ -1,16 +1,19 @@
 package org.epitest.report;
 
-import static java.util.stream.Collectors.toList;
 import static org.pitest.mutationtest.DetectionStatus.KILLED;
 import static org.pitest.mutationtest.DetectionStatus.NO_COVERAGE;
 import static org.pitest.mutationtest.DetectionStatus.SURVIVED;
 
+import java.util.Collection;
 import java.util.List;
-import java.util.function.Predicate;
 
 import org.eclipse.core.runtime.CoreException;
 import org.pitest.mutationtest.DetectionStatus;
 import org.pitest.mutationtest.MutationResult;
+
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
+import com.google.common.collect.Iterables;
 
 /**
  * Contains marker-ids that are used to highlight not-/covered and survived
@@ -59,7 +62,7 @@ public class Markers {
 	}
 
 	private static boolean markSurvived(final SourceFile sourceFile, List<MutationResult> mutationResults, Integer lineNumber) throws CoreException {
-		List<MutationResult> lineMutations = filter(mutationResults, SURVIVED);
+		Collection<MutationResult> lineMutations = filter(mutationResults, SURVIVED);
 		if (lineMutations.isEmpty())
 			return false;
 
@@ -71,14 +74,23 @@ public class Markers {
 		return true;
 	}
 	
-	private static List<MutationResult> filter(List<MutationResult> m, DetectionStatus status) {
-		return m.stream().filter(hasStatus(status)).collect(toList());
+	private static Collection<MutationResult> filter(List<MutationResult> m, DetectionStatus status) {
+		return Collections2.filter(m, hasStatus(status));
+		
 	}
 
 	private static boolean contains(List<MutationResult> m, DetectionStatus status) {
-		return m.stream().anyMatch(hasStatus(status));
+		return Iterables.contains(m, hasStatus(status));
+		
 	}
-	private static Predicate<MutationResult> hasStatus(DetectionStatus status) {
-		return (MutationResult r) -> r.getStatus() == status;
+	private static Predicate<MutationResult> hasStatus(final DetectionStatus status) {
+		return new Predicate<MutationResult>() {
+
+			@Override
+			public boolean apply(MutationResult r) {
+				return r.getStatus() == status;
+			}
+			
+		};
 	}
 }

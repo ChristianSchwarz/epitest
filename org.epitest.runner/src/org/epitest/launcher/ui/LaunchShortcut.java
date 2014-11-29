@@ -125,7 +125,9 @@ public class LaunchShortcut implements ILaunchShortcut2 {
 				return;
 			}
 			performLaunch(elementToLaunch, mode);
-		} catch (InterruptedException | CoreException e) {
+		} catch (InterruptedException e){
+			e.printStackTrace();
+		}catch( CoreException e) {
 			e.printStackTrace();
 		}
 	}
@@ -347,7 +349,7 @@ public class LaunchShortcut implements ILaunchShortcut2 {
 	 */
 	public ILaunchConfiguration[] getLaunchConfigurations(final IEditorPart editor) {
 		final ITypeRoot element = getEditorInputTypeRoot(editor.getEditorInput());
-		List<ILaunchConfiguration> configs = new ArrayList<>();
+		List<ILaunchConfiguration> configs = new ArrayList<ILaunchConfiguration>();
 		if (element != null) {
 			configs = findExistingLaunchConfigurations(element);
 		}

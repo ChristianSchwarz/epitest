@@ -23,6 +23,7 @@ import static org.epitest.report.Markers.MARKER_SURVIVED;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -47,6 +48,7 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.launching.AbstractJavaLaunchConfigurationDelegate;
 import org.epitest.Activator;
+import org.pitest.functional.Option;
 import org.pitest.mutationtest.commandline.OptionsParser;
 import org.pitest.mutationtest.commandline.ParseResult;
 import org.pitest.mutationtest.commandline.PluginFilter;
@@ -55,6 +57,8 @@ import org.pitest.mutationtest.config.ReportOptions;
 import org.pitest.mutationtest.tooling.AnalysisResult;
 import org.pitest.mutationtest.tooling.CombinedStatistics;
 import org.pitest.mutationtest.tooling.EntryPoint;
+
+import com.google.common.collect.ImmutableList;
 
 /**
  * 
@@ -150,31 +154,30 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 		final EntryPoint entryPoint = new EntryPoint();
 		final AnalysisResult result = entryPoint.execute(null, data, plugins);
 
-		Iterable<Exception> it = result.getError();
-		if (result.getError().hasSome()) {
-			List<IStatus> errors = stream(it.spliterator(), false)//
-					.map((Exception e) -> new Status(ERROR, PLUGIN_ID, e.getMessage(), e))//
-					.collect(toList());
+		Option<Exception> it = result.getError();
+		if (it.hasNone())
+			return result.getStatistics().value();
+		
+		
+			List<IStatus> errors = new ArrayList<IStatus>() ;
+			for (Exception e : it) 
+				errors.add(new Status(ERROR, PLUGIN_ID, e.getMessage(), e));
+			
+					
 			IStatus[] errorArray = errors.toArray(new IStatus[errors.size()]);
 			throw new CoreException(new MultiStatus(PLUGIN_ID, ERROR, errorArray, null, null));
-		}
+		
 
-		return result.getStatistics().value();
 
 	}
 
-	//
-
 	private static List<String> getSourceFolder(IJavaProject javaProject) throws JavaModelException {
-
-		IClasspathEntry[] classpathEntries = javaProject.getResolvedClasspath(true);
-		Predicate<IClasspathEntry> sourcesEntries = (IClasspathEntry entry) -> entry.getContentKind() == K_SOURCE;
-		Function<IClasspathEntry, String> absolutePath = (IClasspathEntry entry) -> entry.getPath().toFile().getAbsolutePath();
-		return stream(classpathEntries)//
-				.filter(sourcesEntries)//
-				.map(absolutePath)//
-				.collect(toList());
-
+		List<String> result = new ArrayList<String>();
+		for (IClasspathEntry e : javaProject.getResolvedClasspath(true)) 
+			if(e.getContentKind() == K_SOURCE)
+				result.add(e.getPath().toFile().getAbsolutePath());
+		
+		return result;
 	}
 
 	private List<String> getUnitsForMutation(ILaunchConfiguration configuration) throws CoreException {
@@ -185,7 +188,7 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 			IType t = javaProject.findType(testClassName);
 			IPackageFragment packageFragment = t.getPackageFragment();
 
-			return singletonList(packageFragment.getElementName() + ".*");
+			return getPackage(packageFragment);
 		}
 		if (!containerHandle.isEmpty()) {
 
@@ -205,15 +208,20 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 
 			case PACKAGE_FRAGMENT:
 				IPackageFragment packageFragment = ((IPackageFragment) element);
-
-				String packageName = packageFragment.getElementName();
-
-				return singletonList(packageName + ".*");
+				return getPackage(packageFragment);
 			}
 		}
 
 		abort("Error no classes under test found! Container-Handle was:" + containerHandle + " , test class name:" + testClassName, null, ERR_UNSPECIFIED_MAIN_TYPE);
 		return emptyList();
+	}
+
+	private List<String> getPackage(IPackageFragment packageFragment) throws JavaModelException {
+		if (packageFragment.getKind()!=K_SOURCE)
+			return emptyList();
+		String packageName = packageFragment.getElementName();
+
+		return singletonList(packageName + ".*");
 	}
 
 	private List<String> getTestUnits(ILaunchConfiguration configuration) throws CoreException {
@@ -258,10 +266,12 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 	}
 
 	private List<String> getPackages(IPackageFragmentRoot packageFragmentRoot) throws JavaModelException {
-		List<String> packages = stream(packageFragmentRoot.getChildren())//
-				.filter((IJavaElement e) -> e.getElementType() == PACKAGE_FRAGMENT)//
-				.map((IJavaElement e) -> e.getElementName() + ".*")//
-				.collect(toList());
+		List<String> packages = new ArrayList<String>();
+		for (IJavaElement e : packageFragmentRoot.getChildren()) 
+			if (e.getElementType()== PACKAGE_FRAGMENT)
+				packages.add(e.getElementName() + ".*");
+				
+				
 		return packages;
 	}
 

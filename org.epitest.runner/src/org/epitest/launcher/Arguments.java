@@ -9,7 +9,7 @@ import java.util.List;
 
 class Arguments {
 
-	private final List<String> args = new ArrayList<>();
+	private final List<String> args = new ArrayList<String>();
 
 	Arguments add(String attribute, String value) {
 		args.add(checkNotNull(attribute));
@@ -31,5 +31,19 @@ class Arguments {
 
 	String[] toArray() {
 		return args.toArray(new String[args.size()]);
+	}
+	
+	@Override
+	public String toString() {
+		StringBuilder b = new StringBuilder();
+		final int size = args.size()/2;
+		for (int i = 0; i < size; i++) {
+			if (i>0)
+				b.append(',');
+			b.append(args.get(i*2));
+			b.append('=');
+			b.append(args.get(i*2+1));
+		}
+		return b.toString();
 	}
 }
