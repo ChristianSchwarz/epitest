@@ -2,11 +2,9 @@ package org.epitest.launcher;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.io.Files.createTempDir;
-import static java.util.Arrays.stream;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.StreamSupport.stream;
+import static java.util.logging.Level.SEVERE;
 import static org.eclipse.core.resources.IResource.DEPTH_INFINITE;
 import static org.eclipse.core.runtime.IProgressMonitor.UNKNOWN;
 import static org.eclipse.core.runtime.IStatus.ERROR;
@@ -23,10 +21,9 @@ import static org.epitest.report.Markers.MARKER_SURVIVED;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.function.Function;
-import java.util.function.Predicate;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
@@ -38,6 +35,7 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
+import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
 import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
@@ -57,8 +55,7 @@ import org.pitest.mutationtest.config.ReportOptions;
 import org.pitest.mutationtest.tooling.AnalysisResult;
 import org.pitest.mutationtest.tooling.CombinedStatistics;
 import org.pitest.mutationtest.tooling.EntryPoint;
-
-import com.google.common.collect.ImmutableList;
+import org.pitest.util.Log;
 
 /**
  * 
@@ -81,13 +78,11 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 			monitor = new NullProgressMonitor();
 
 		monitor.beginTask(configuration.getName(), UNKNOWN);
-		
+
 		IJavaProject javaProject = getJavaProject(configuration);
 		removeMarker(javaProject.getResource());
 		File reportDir = createReportDir();
 		try {
-
-	
 
 			final PluginServices plugins = PluginServices.makeForContextLoader();
 
@@ -118,13 +113,24 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 	 * @throws CoreException
 	 */
 	private String[] createPiTestArguments(ILaunchConfiguration configuration, IJavaProject javaProject, File reportDir) throws CoreException {
+		List<String> classpathList = getClasspathList(configuration);
+		List<String> unitsForMutation = getUnitsForMutation(configuration);
+		List<String> testUnits = getTestUnits(configuration);
+		List<String> sourceFolder = getSourceFolder(javaProject);
+		String absolutePath = reportDir.getAbsolutePath();
+
+		ILaunchConfigurationWorkingCopy workingCopy = configuration.getWorkingCopy();
+		workingCopy.setAttribute("classPath", classpathList);
+		workingCopy.setAttribute("targetTests", testUnits);
+		workingCopy.setAttribute("unitsForMutation", unitsForMutation);
+
 		return new Arguments()//
-				.add("--classPath", getClasspathList(configuration))//
-				.add("--targetClasses", getUnitsForMutation(configuration)) //
-				.add("--targetTests", getTestUnits(configuration))//
+				.add("--classPath", classpathList)//
+				.add("--targetClasses", unitsForMutation) //
+				.add("--targetTests", testUnits)//
 				.add("--outputFormats", "Epitest") //$NON-NLS-1$
-				.add("--sourceDirs", getSourceFolder(javaProject)) //
-				.add("--reportDir", reportDir.getAbsolutePath())//
+				.add("--sourceDirs", sourceFolder) //
+				.add("--reportDir", absolutePath)//
 				.add("--verbose", "true")//
 				.add("--threads", Runtime.getRuntime().availableProcessors())//
 				.add("--timestampedReports", false)//
@@ -151,32 +157,35 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 
 	private CombinedStatistics runReport(final ReportOptions data, PluginServices plugins) throws CoreException {
 
+		List<IStatus> errors = new ArrayList<IStatus>();
 		final EntryPoint entryPoint = new EntryPoint();
-		final AnalysisResult result = entryPoint.execute(null, data, plugins);
+		final AnalysisResult result;
+		try {
+			result = entryPoint.execute(null, data, plugins);
+			Option<Exception> it = result.getError();
+			if (it.hasNone())
+				return result.getStatistics().value();
 
-		Option<Exception> it = result.getError();
-		if (it.hasNone())
-			return result.getStatistics().value();
-		
-		
-			List<IStatus> errors = new ArrayList<IStatus>() ;
-			for (Exception e : it) 
+			for (Exception e : it)
 				errors.add(new Status(ERROR, PLUGIN_ID, e.getMessage(), e));
+		} catch (Throwable e) {
+			Logger pitestLog = Log.getLogger();
+			pitestLog.log(SEVERE, e.getMessage(), e);
 			
-					
-			IStatus[] errorArray = errors.toArray(new IStatus[errors.size()]);
-			throw new CoreException(new MultiStatus(PLUGIN_ID, ERROR, errorArray, null, null));
-		
+			errors.add(new Status(ERROR, PLUGIN_ID, e.getMessage(), e));
+		}
 
+		IStatus[] errorArray = errors.toArray(new IStatus[errors.size()]);
+		throw new CoreException(new MultiStatus(PLUGIN_ID, ERROR, errorArray, null, null));
 
 	}
 
 	private static List<String> getSourceFolder(IJavaProject javaProject) throws JavaModelException {
 		List<String> result = new ArrayList<String>();
-		for (IClasspathEntry e : javaProject.getResolvedClasspath(true)) 
-			if(e.getContentKind() == K_SOURCE)
+		for (IClasspathEntry e : javaProject.getResolvedClasspath(true))
+			if (e.getContentKind() == K_SOURCE)
 				result.add(e.getPath().toFile().getAbsolutePath());
-		
+
 		return result;
 	}
 
@@ -217,7 +226,7 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 	}
 
 	private List<String> getPackage(IPackageFragment packageFragment) throws JavaModelException {
-		if (packageFragment.getKind()!=K_SOURCE)
+		if (packageFragment.getKind() != K_SOURCE)
 			return emptyList();
 		String packageName = packageFragment.getElementName();
 
@@ -240,12 +249,12 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 
 			int elementType = element.getElementType();
 			switch (elementType) {
- 			 case IJavaElement.JAVA_PROJECT:
- 				 List<String> packages = new ArrayList<String>();
+			case IJavaElement.JAVA_PROJECT:
+				List<String> packages = new ArrayList<String>();
 				IPackageFragmentRoot[] allPackageFragmentRoots = javaProject.getAllPackageFragmentRoots();
-				for (IPackageFragmentRoot packageFragmentRoot : allPackageFragmentRoots) 
+				for (IPackageFragmentRoot packageFragmentRoot : allPackageFragmentRoots)
 					packages.addAll(getPackages(packageFragmentRoot));
-				
+
 				return packages;
 			case IJavaElement.PACKAGE_FRAGMENT_ROOT:
 				IPackageFragmentRoot packageFragmentRoot = ((IPackageFragmentRoot) element);
@@ -267,11 +276,10 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 
 	private List<String> getPackages(IPackageFragmentRoot packageFragmentRoot) throws JavaModelException {
 		List<String> packages = new ArrayList<String>();
-		for (IJavaElement e : packageFragmentRoot.getChildren()) 
-			if (e.getElementType()== PACKAGE_FRAGMENT)
+		for (IJavaElement e : packageFragmentRoot.getChildren())
+			if (e.getElementType() == PACKAGE_FRAGMENT)
 				packages.add(e.getElementName() + ".*");
-				
-				
+
 		return packages;
 	}
 
