@@ -22,7 +22,6 @@ import static org.epitest.report.Markers.MARKER_SURVIVED;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.core.resources.IMarker;
@@ -37,11 +36,11 @@ import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
 import org.eclipse.jdt.core.IClasspathEntry;
+import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
-import org.eclipse.jdt.core.IType;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.launching.AbstractJavaLaunchConfigurationDelegate;
@@ -119,6 +118,8 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 		List<String> sourceFolder = getSourceFolder(javaProject);
 		String absolutePath = reportDir.getAbsolutePath();
 
+		unitsForMutation.removeAll(testUnits);
+		
 		ILaunchConfigurationWorkingCopy workingCopy = configuration.getWorkingCopy();
 		workingCopy.setAttribute("classPath", classpathList);
 		workingCopy.setAttribute("targetTests", testUnits);
@@ -171,7 +172,7 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 		} catch (Throwable e) {
 			Logger pitestLog = Log.getLogger();
 			pitestLog.log(SEVERE, e.getMessage(), e);
-			
+
 			errors.add(new Status(ERROR, PLUGIN_ID, e.getMessage(), e));
 		}
 
@@ -191,46 +192,35 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 
 	private List<String> getUnitsForMutation(ILaunchConfiguration configuration) throws CoreException {
 		IJavaProject javaProject = getJavaProject(configuration);
-		String containerHandle = configuration.getAttribute(ATTR_TEST_CONTAINER, "");
-		String testClassName = configuration.getAttribute(ATTR_MAIN_TYPE_NAME, "");
-		if (!testClassName.isEmpty()) {
-			IType t = javaProject.findType(testClassName);
-			IPackageFragment packageFragment = t.getPackageFragment();
-
-			return getPackage(packageFragment);
+		IPackageFragmentRoot[] allPackageFragmentRoots = javaProject.getAllPackageFragmentRoots();
+		List<String> result = new ArrayList<String>();
+		for (IPackageFragmentRoot fragmentRoot : allPackageFragmentRoots) {
+			if (fragmentRoot.getKind() == K_SOURCE)
+				getPackages(result, fragmentRoot);
 		}
-		if (!containerHandle.isEmpty()) {
-
-			IJavaElement element = JavaCore.create(containerHandle);
-			if (element == null || !element.exists())
-				abort("Error input element does not exist! Container-Handle was:" + containerHandle, null, ERR_UNSPECIFIED_MAIN_TYPE);
-
-			int elementType = element.getElementType();
-			switch (elementType) {
-			// case IJavaElement.JAVA_PROJECT:
-			// javaProject.getAllPackageFragmentRoots()
-
-			case IJavaElement.PACKAGE_FRAGMENT_ROOT:
-				IPackageFragmentRoot packageFragmentRoot = ((IPackageFragmentRoot) element);
-
-				return getPackages(packageFragmentRoot);
-
-			case PACKAGE_FRAGMENT:
-				IPackageFragment packageFragment = ((IPackageFragment) element);
-				return getPackage(packageFragment);
-			}
-		}
-
-		abort("Error no classes under test found! Container-Handle was:" + containerHandle + " , test class name:" + testClassName, null, ERR_UNSPECIFIED_MAIN_TYPE);
-		return emptyList();
+		return result;
 	}
 
 	private List<String> getPackage(IPackageFragment packageFragment) throws JavaModelException {
 		if (packageFragment.getKind() != K_SOURCE)
 			return emptyList();
-		String packageName = packageFragment.getElementName();
+		
+		List<String> result = new ArrayList<String>();
 
-		return singletonList(packageName + ".*");
+		IJavaElement[] children = packageFragment.getChildren();
+		for (IJavaElement element : children) {
+			if (element instanceof ICompilationUnit) {
+				ICompilationUnit javaClass = (ICompilationUnit) element;
+
+				String fullClassName = javaClass.findPrimaryType().getFullyQualifiedName();
+				result.add(fullClassName);
+			} else if (element instanceof IPackageFragment) {
+				result.addAll(getPackage((IPackageFragment) element));
+			}
+
+		}
+
+		return result;
 	}
 
 	private List<String> getTestUnits(ILaunchConfiguration configuration) throws CoreException {
@@ -249,24 +239,27 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 
 			int elementType = element.getElementType();
 			switch (elementType) {
-			case IJavaElement.JAVA_PROJECT:
-				List<String> packages = new ArrayList<String>();
+			case IJavaElement.JAVA_PROJECT:{
+				List<String> result = new ArrayList<String>();
 				IPackageFragmentRoot[] allPackageFragmentRoots = javaProject.getAllPackageFragmentRoots();
 				for (IPackageFragmentRoot packageFragmentRoot : allPackageFragmentRoots)
-					packages.addAll(getPackages(packageFragmentRoot));
+					getPackages(result, packageFragmentRoot);
 
-				return packages;
-			case IJavaElement.PACKAGE_FRAGMENT_ROOT:
+				return result;
+			}
+			case IJavaElement.PACKAGE_FRAGMENT_ROOT:{
 				IPackageFragmentRoot packageFragmentRoot = ((IPackageFragmentRoot) element);
+				List<String> result = new ArrayList<String>();
+				 getPackages(result, packageFragmentRoot);
+				return result;}
 
-				return getPackages(packageFragmentRoot);
-
-			case PACKAGE_FRAGMENT:
+			case PACKAGE_FRAGMENT:{
 				IPackageFragment packageFragment = ((IPackageFragment) element);
 
 				String packageName = packageFragment.getElementName();
 
 				return singletonList(packageName + ".*");
+			}
 			}
 		}
 
@@ -274,13 +267,12 @@ public class LaunchConfigurationDelegate extends AbstractJavaLaunchConfiguration
 		return emptyList();
 	}
 
-	private List<String> getPackages(IPackageFragmentRoot packageFragmentRoot) throws JavaModelException {
-		List<String> packages = new ArrayList<String>();
+	private void getPackages(List<String> result, IPackageFragmentRoot packageFragmentRoot) throws JavaModelException {
+
 		for (IJavaElement e : packageFragmentRoot.getChildren())
 			if (e.getElementType() == PACKAGE_FRAGMENT)
-				packages.add(e.getElementName() + ".*");
+				result.addAll(getPackage((IPackageFragment) e));
 
-		return packages;
 	}
 
 	private List<String> getClasspathList(ILaunchConfiguration configuration) throws CoreException {
