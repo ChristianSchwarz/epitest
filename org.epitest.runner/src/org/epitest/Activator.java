@@ -117,7 +117,6 @@ public class Activator extends AbstractUIPlugin {
 		IConsole[] consoles = {console};
 		IConsoleManager cm = ConsolePlugin.getDefault().getConsoleManager();
 		cm.addConsoles(consoles);
-		
 	}
 
 	public void stop(BundleContext context) throws Exception {

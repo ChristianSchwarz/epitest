@@ -37,12 +37,12 @@ class Arguments {
 	public String toString() {
 		StringBuilder b = new StringBuilder();
 		final int size = args.size()/2;
+		
 		for (int i = 0; i < size; i++) {
-			if (i>0)
-				b.append(',');
-			b.append(args.get(i*2));
-			b.append('=');
-			b.append(args.get(i*2+1));
+			String arg = args.get(i*2);
+			String value = args.get(i*2+1);
+			
+			b.append(arg).append('=').append(value).append("\r\n");
 		}
 		return b.toString();
 	}
