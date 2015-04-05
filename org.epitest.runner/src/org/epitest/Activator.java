@@ -44,9 +44,9 @@ public class Activator extends AbstractUIPlugin {
 
 	private String pitestCorePath;
 
-	private final static String PITEST_CMD_LINE_JAR = "pitest-command-line-1.1.2.jar";
+	private final static String PITEST_CMD_LINE_JAR = "pitest-command-line-1.1.4.jar";
 
-	private static final String PITEST_JAR = "pitest-1.1.2.jar";
+	private static final String PITEST_JAR = "pitest-1.1.4.jar";
 
 	public void start(BundleContext context) throws Exception {
 		super.start(context);

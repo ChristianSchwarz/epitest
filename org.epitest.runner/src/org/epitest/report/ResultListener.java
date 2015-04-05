@@ -45,7 +45,7 @@ final class ResultListener implements MutationResultListener {
 		for (IProject project : root.getProjects())
 			try {
 				// check if we have a Java project
-				if (project.isNatureEnabled("org.eclipse.jdt.core.javanature")) {
+				if (project.isOpen()  && project.isNatureEnabled("org.eclipse.jdt.core.javanature")) {
 					IJavaProject javaProject = JavaCore.create(project);
 					traversePackages(results, javaProject);
 				}
