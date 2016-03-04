@@ -1,5 +1,8 @@
-##expected behaviour
+### What is the expected behaviour?
 
-##actual behaviour
+### What is the actual behaviour?
 
-##how to reproduce
+### How to reproduce?
+ - step 1 
+ - step 2
+ - ...
